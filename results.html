@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>IRCTC – Results</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<style>
+    body { background: #f3f4f6; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    @keyframes slideInRight { 0% { transform: translateX(100%); } 100% { transform: translateX(0); } }
+    .anim-slide { animation: slideInRight 0.3s ease-out forwards; }
+</style>
+</head>
+
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+    const TRAINS = [
+        { id: 1, name: 'Vande Bharat Exp', number: '22436', dep: '06:00', arr: '11:00', dur: '5h 00m', classes: [{code:'CC', p:1565, s:'AVL 142', c:'text-emerald-600'}, {code:'EC', p:2890, s:'WL 12', c:'text-red-600'}] },
+        { id: 2, name: 'Shatabdi Express', number: '12004', dep: '07:20', arr: '12:50', dur: '5h 30m', classes: [{code:'CC', p:1405, s:'RAC 5', c:'text-orange-600'}] }
+    ];
+
+    function Results() {
+        React.useEffect(() => { window.lucide.createIcons(); }, []);
+
+        return (
+            <div className="max-w-md mx-auto min-h-screen bg-slate-50 pt-6 px-4 pb-6 anim-slide">
+                {/* Header with Back Button */}
+                <div className="flex items-center justify-between mb-6">
+                    <button onClick={() => window.location.href = 'home.html'} className="p-2 -ml-2 text-slate-500 hover:bg-slate-200 rounded-full">
+                        <i data-lucide="arrow-left" className="w-6 h-6"></i>
+                    </button>
+                    <div className="text-center">
+                        <h2 className="font-bold text-[#213d77] text-lg">NDLS <span className="text-slate-400 px-1">→</span> CNB</h2>
+                        <p className="text-xs text-slate-400">Tomorrow • 2 Trains Found</p>
+                    </div>
+                    <div className="w-8"></div>
+                </div>
+
+                {/* Train List */}
+                {TRAINS.map((train) => (
+                    <div key={train.id} className="bg-white rounded-xl p-4 shadow-sm mb-4 border border-slate-100">
+                        <div className="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 className="font-bold text-lg text-slate-800">{train.name}</h3>
+                                <p className="text-xs text-slate-400">#{train.number}</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-lg font-bold text-slate-800">{train.dep}</p>
+                                <p className="text-[10px] text-slate-400">{train.dur}</p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+                            {train.classes.map((cls, idx) => (
+                                <div key={idx} className="min-w-[100px] p-2 rounded-lg border border-slate-200 bg-slate-50">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="font-bold text-xs text-slate-600">{cls.code}</span>
+                                        <span className="font-bold text-xs text-slate-800">₹{cls.p}</span>
+                                    </div>
+                                    <p className={`text-[10px] font-bold ${cls.c}`}>{cls.s}</p>
+                                </div>
+                            ))}
+                        </div>
+                        <button className="w-full mt-3 bg-blue-50 text-[#213d77] py-2 rounded font-bold text-xs hover:bg-[#213d77] hover:text-white transition-colors">
+                            Check Availability
+                        </button>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<Results />);
+</script>
+</body>
+</html>
