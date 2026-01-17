@@ -18,8 +18,6 @@
 
     /* --- ANIMATIONS --- */
     .gpu-accel { transform: translateZ(0); will-change: transform; backface-visibility: hidden; }
-
-    /* Splash: Train Movement */
     @keyframes trainJourney { 0% { transform: translateX(-150%); } 40% { transform: translateX(0%); } 70% { transform: translateX(0%); } 100% { transform: translateX(150%); } }
     @keyframes speedLines { 0% { opacity: 0; transform: translateX(0); } 40% { opacity: 0; } 75% { opacity: 1; transform: translateX(-20px); } 100% { opacity: 0; transform: translateX(-100px); } }
     @keyframes fadeUp { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
@@ -27,11 +25,9 @@
     .anim-train-main { animation: trainJourney 3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
     .anim-text-reveal { opacity: 0; animation: fadeUp 0.8s ease-out forwards; animation-delay: 1.2s; }
     .anim-entry { animation: fadeUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; }
-
-    /* Door Animations */
+    .anim-fade-in { animation: fadeUp 0.3s ease-out forwards; }
     @keyframes slideLeft { 0% { transform: translateX(0); } 100% { transform: translateX(-105%); } }
     @keyframes slideRight { 0% { transform: translateX(0); } 100% { transform: translateX(105%); } }
-
     .door-left { animation: slideLeft 1.4s cubic-bezier(0.7, 0, 0.2, 1) forwards; animation-delay: 0.1s; }
     .door-right { animation: slideRight 1.4s cubic-bezier(0.7, 0, 0.2, 1) forwards; animation-delay: 0.1s; }
 </style>
@@ -42,7 +38,7 @@
 
 <script type="text/babel">
 
-    // --- 1. SPLASH SCREEN COMPONENT ---
+    // --- 1. SPLASH SCREEN ---
     function Splash({ onComplete }) {
         React.useEffect(() => { setTimeout(onComplete, 3200); }, []);
         return (
@@ -60,7 +56,6 @@
                             <circle cx="140" cy="58" r="6" fill="#94a3b8"/>
                         </svg>
                     </div>
-                    <div className="absolute right-10 top-1/2 w-20 h-2 bg-white/20 rounded-full" style={{animation: 'speedLines 3s ease-in-out forwards'}}></div>
                 </div>
                 <div className="text-center mt-10 anim-text-reveal">
                     <h1 className="text-3xl font-bold text-white tracking-widest">IRCTC</h1>
@@ -70,125 +65,178 @@
         );
     }
 
-    // --- 2. BOARDING TRANSITION COMPONENT ---
+    // --- 2. BOARDING ANIMATION ---
     function BoardingAnimation({ onRedirectReady }) {
         React.useEffect(() => { setTimeout(onRedirectReady, 1500); }, []);
         return (
             <div className="fixed inset-0 z-[60] overflow-hidden flex items-center justify-center bg-white gpu-accel">
-                <div className="absolute inset-0 bg-white z-0"></div>
-                <div className="door-left absolute top-0 left-0 w-1/2 h-full bg-[#213d77] border-r-2 border-black flex flex-col items-end justify-center pr-6 shadow-2xl z-20 relative overflow-hidden gpu-accel">
-                    <div className="absolute top-[40%] left-0 w-full h-4 bg-[#d11010] shadow-sm"></div>
-                    <div className="absolute top-[42.5%] left-0 w-full h-0.5 bg-white/80"></div>
-                    <div className="w-24 h-32 bg-black/40 border border-slate-600 rounded-lg mb-4 backdrop-blur-sm relative z-10 shadow-inner"><div className="absolute top-2 right-2 w-full h-full bg-gradient-to-tr from-transparent to-white/10 rounded-lg"></div></div> 
-                    <div className="absolute right-1 top-1/2 w-3 h-28 bg-gradient-to-b from-slate-300 to-slate-400 rounded-full shadow-lg border border-slate-500 z-30"></div> 
-                </div>
-                <div className="door-right absolute top-0 right-0 w-1/2 h-full bg-[#213d77] border-l-2 border-black flex flex-col items-start justify-center pl-6 shadow-2xl z-20 relative overflow-hidden gpu-accel">
-                    <div className="absolute top-[40%] right-0 w-full h-4 bg-[#d11010] shadow-sm"></div>
-                    <div className="absolute top-[42.5%] right-0 w-full h-0.5 bg-white/80"></div>
-                    <div className="w-24 h-32 bg-black/40 border border-slate-600 rounded-lg mb-4 backdrop-blur-sm relative z-10 shadow-inner"><div className="absolute top-2 right-2 w-full h-full bg-gradient-to-tr from-transparent to-white/10 rounded-lg"></div></div> 
-                    <div className="absolute left-1 top-1/2 w-3 h-28 bg-gradient-to-b from-slate-300 to-slate-400 rounded-full shadow-lg border border-slate-500 z-30"></div> 
-                </div>
+                <div className="door-left absolute top-0 left-0 w-1/2 h-full bg-[#213d77] border-r-2 border-black flex flex-col items-end justify-center pr-6 shadow-2xl z-20"><div className="w-24 h-32 bg-black/40 border border-slate-600 rounded-lg mb-4 backdrop-blur-sm relative z-10 shadow-inner"></div></div>
+                <div className="door-right absolute top-0 right-0 w-1/2 h-full bg-[#213d77] border-l-2 border-black flex flex-col items-start justify-center pl-6 shadow-2xl z-20"><div className="w-24 h-32 bg-black/40 border border-slate-600 rounded-lg mb-4 backdrop-blur-sm relative z-10 shadow-inner"></div></div>
             </div>
         );
     }
 
-    // --- 3. LOGIN PAGE COMPONENT ---
-    function LoginPage({ onLoginSuccess }) {
-        const [username, setUsername] = React.useState('');
-        const [password, setPassword] = React.useState('');
-        const [captchaInput, setCaptchaInput] = React.useState('');
+    // --- 3. AUTH PAGE (UPDATED LOGIC) ---
+    function AuthPage({ onLoginSuccess }) {
+        const [isRegistering, setIsRegistering] = React.useState(false);
         const [loading, setLoading] = React.useState(false);
+        const [showPassword, setShowPassword] = React.useState(false); 
+        
+        // Captcha States
+        const [generatedCaptcha, setGeneratedCaptcha] = React.useState('');
+        const [captchaInput, setCaptchaInput] = React.useState('');
+
+        const [formData, setFormData] = React.useState({
+            username: '', password: '', fullName: '', email: '', mobile: ''
+        });
+
+        // Generate Random Captcha
+        const generateCaptcha = () => {
+            const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+            let result = "";
+            for (let i = 0; i < 5; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            setGeneratedCaptcha(result);
+            setCaptchaInput(''); // Clear input
+        };
 
         React.useEffect(() => { 
             document.body.style.background = '#f3f4f6'; 
             if(window.lucide) window.lucide.createIcons(); 
-        }, []);
+            generateCaptcha(); 
+        }, [isRegistering]);
+
+        const handleChange = (e) => setFormData({...formData, [e.target.name]: e.target.value});
+
+        const handleRegister = (e) => {
+            e.preventDefault();
+            setLoading(true);
+            setTimeout(() => {
+                const users = JSON.parse(localStorage.getItem('irctc_users') || "[]");
+                if(users.find(u => u.username === formData.username)) {
+                    alert("Username taken!");
+                    setLoading(false); return;
+                }
+                users.push(formData);
+                localStorage.setItem('irctc_users', JSON.stringify(users));
+                localStorage.setItem('irctc_current_user', JSON.stringify(formData));
+                onLoginSuccess(); 
+            }, 1200);
+        };
 
         const handleLogin = (e) => {
             e.preventDefault();
+
+            // --- FIX: Normalize Case and Trim Whitespace ---
+            const userEntry = captchaInput.toUpperCase().trim();
+            const code = generatedCaptcha.trim();
+
+            if (userEntry !== code) {
+                alert("Incorrect Captcha! Please try again.");
+                generateCaptcha(); // Reset captcha for security
+                return;
+            }
+
             setLoading(true);
-            // Simulate API check then trigger Boarding
             setTimeout(() => {
-                setLoading(false);
-                onLoginSuccess(); 
-            }, 1000);
+                const users = JSON.parse(localStorage.getItem('irctc_users') || "[]");
+                const user = users.find(u => u.username === formData.username && u.password === formData.password);
+                if (user) {
+                    localStorage.setItem('irctc_current_user', JSON.stringify(user));
+                    onLoginSuccess();
+                } else {
+                    alert("Invalid Credentials. Please Register first.");
+                    setLoading(false);
+                    generateCaptcha();
+                }
+            }, 1200);
         };
 
         return (
             <div className="max-w-md mx-auto h-screen bg-white relative shadow-2xl overflow-hidden flex flex-col">
-                <div className="relative bg-[#213d77] h-[35vh] rounded-b-[3rem] flex flex-col items-center justify-center text-white shrink-0 z-10">
+                <div className={`relative bg-[#213d77] ${isRegistering ? 'h-[25vh]' : 'h-[35vh]'} transition-all duration-500 rounded-b-[3rem] flex flex-col items-center justify-center text-white shrink-0 z-10`}>
                     <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '20px 20px'}}></div>
-                    <div className="w-24 h-24 bg-white rounded-2xl shadow-lg flex items-center justify-center mb-4 anim-entry" style={{animationDelay: '0.1s'}}>
-                        <img src="https://upload.wikimedia.org/wikipedia/en/4/45/IRCTC_Logo.svg" className="w-16 h-16" />
+                    <div className={`bg-white rounded-2xl shadow-lg flex items-center justify-center mb-2 transition-all duration-500 ${isRegistering ? 'w-16 h-16' : 'w-24 h-24'}`}>
+                        <img src="https://upload.wikimedia.org/wikipedia/en/4/45/IRCTC_Logo.svg" className="w-12 h-12" />
                     </div>
-                    <h1 className="text-2xl font-bold tracking-wide anim-entry" style={{animationDelay: '0.2s'}}>IRCTC Rail Connect</h1>
-                    <p className="text-blue-200 text-sm anim-entry" style={{animationDelay: '0.3s'}}>Official Partner of Indian Railways</p>
+                    <h1 className="text-xl font-bold tracking-wide anim-entry">IRCTC Rail Connect</h1>
                 </div>
 
-                <div className="flex-1 px-8 -mt-10 relative z-20">
+                <div className="flex-1 px-8 -mt-10 relative z-20 overflow-y-auto pb-4">
                     <div className="bg-white rounded-2xl shadow-xl p-6 anim-entry" style={{animationDelay: '0.4s'}}>
-                        <h2 className="text-xl font-bold text-slate-800 mb-1">Welcome Back</h2>
-                        <p className="text-sm text-slate-400 mb-6">Sign in to continue to your account</p>
+                        <h2 className="text-xl font-bold text-slate-800 mb-1">{isRegistering ? 'Create Account' : 'Welcome Back'}</h2>
+                        <p className="text-sm text-slate-400 mb-6">{isRegistering ? 'Join the network' : 'Sign in to continue'}</p>
 
-                        <form onSubmit={handleLogin} className="space-y-4">
+                        <form onSubmit={isRegistering ? handleRegister : handleLogin} className="space-y-4">
+                            {isRegistering && (
+                                <div className="space-y-3 anim-fade-in">
+                                    <div className="flex items-center border rounded-lg px-3 py-2 bg-slate-50"><i data-lucide="user-check" className="w-4 h-4 text-slate-400 mr-3"></i><input required name="fullName" placeholder="Full Name" onChange={handleChange} className="w-full bg-transparent outline-none text-sm" /></div>
+                                    <div className="flex items-center border rounded-lg px-3 py-2 bg-slate-50"><i data-lucide="mail" className="w-4 h-4 text-slate-400 mr-3"></i><input required name="email" type="email" placeholder="Email" onChange={handleChange} className="w-full bg-transparent outline-none text-sm" /></div>
+                                    <div className="flex items-center border rounded-lg px-3 py-2 bg-slate-50"><i data-lucide="phone" className="w-4 h-4 text-slate-400 mr-3"></i><input required name="mobile" type="tel" placeholder="Mobile" onChange={handleChange} className="w-full bg-transparent outline-none text-sm" /></div>
+                                </div>
+                            )}
+
                             <div className="space-y-1">
-                                <label className="text-xs font-bold text-slate-500 uppercase">User Name</label>
-                                <div className="flex items-center border border-slate-200 rounded-lg px-3 py-3 focus-within:border-[#213d77] focus-within:bg-blue-50 transition-colors">
+                                <label className="text-xs font-bold text-slate-500 uppercase">Username</label>
+                                <div className="flex items-center border border-slate-200 rounded-lg px-3 py-3 focus-within:border-[#213d77] transition-colors">
                                     <i data-lucide="user" className="w-5 h-5 text-slate-400 mr-3"></i>
-                                    <input type="text" className="w-full outline-none bg-transparent font-medium text-slate-700 placeholder-slate-300" placeholder="Enter username" value={username} onChange={(e) => setUsername(e.target.value)} />
+                                    <input required name="username" onChange={handleChange} type="text" className="w-full outline-none bg-transparent font-medium text-slate-700" placeholder="Username" />
                                 </div>
                             </div>
 
                             <div className="space-y-1">
                                 <label className="text-xs font-bold text-slate-500 uppercase">Password</label>
-                                <div className="flex items-center border border-slate-200 rounded-lg px-3 py-3 focus-within:border-[#213d77] focus-within:bg-blue-50 transition-colors">
+                                <div className="flex items-center border border-slate-200 rounded-lg px-3 py-3 focus-within:border-[#213d77] transition-colors">
                                     <i data-lucide="lock" className="w-5 h-5 text-slate-400 mr-3"></i>
-                                    <input type="password" className="w-full outline-none bg-transparent font-medium text-slate-700 placeholder-slate-300" placeholder="Enter password" value={password} onChange={(e) => setPassword(e.target.value)} />
-                                    <i data-lucide="eye" className="w-4 h-4 text-slate-300 cursor-pointer"></i>
+                                    <input required name="password" onChange={handleChange} type={showPassword ? "text" : "password"} className="w-full outline-none bg-transparent font-medium text-slate-700" placeholder="Password" />
+                                    <i onClick={() => setShowPassword(!showPassword)} data-lucide={showPassword ? "eye-off" : "eye"} className="w-4 h-4 text-slate-400 cursor-pointer hover:text-[#213d77]"></i>
                                 </div>
                             </div>
 
-                            <div className="space-y-1 pt-2">
-                                <div className="flex justify-between items-center mb-1">
-                                    <label className="text-xs font-bold text-slate-500 uppercase">Captcha</label>
-                                    <span className="text-[10px] text-[#d11010] font-bold cursor-pointer hover:underline flex items-center gap-1"><i data-lucide="refresh-cw" className="w-3 h-3"></i> Refresh</span>
+                            {!isRegistering && (
+                                <div className="space-y-1 pt-2">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="text-xs font-bold text-slate-500 uppercase">Captcha</label>
+                                        <span onClick={generateCaptcha} className="text-[10px] text-[#d11010] font-bold cursor-pointer hover:underline flex items-center gap-1"><i data-lucide="refresh-cw" className="w-3 h-3"></i> Refresh</span>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <div className="bg-slate-800 text-white font-mono text-lg tracking-widest px-4 py-2 rounded-lg select-none flex items-center justify-center w-32 shadow-inner" style={{backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.1) 5px, rgba(255,255,255,0.1) 10px)'}}>
+                                            {generatedCaptcha}
+                                        </div>
+                                        <input type="text" value={captchaInput} onChange={(e) => setCaptchaInput(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 outline-none focus:border-[#213d77] uppercase font-bold text-center placeholder:font-normal placeholder:normal-case" placeholder="Enter code" />
+                                    </div>
                                 </div>
-                                <div className="flex gap-3">
-                                    <div className="bg-slate-800 text-white font-mono text-lg tracking-widest px-4 py-2 rounded-lg select-none flex items-center justify-center w-32 shadow-inner" style={{backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.1) 5px, rgba(255,255,255,0.1) 10px)'}}>X9K9m</div>
-                                    <input type="text" className="w-full border border-slate-200 rounded-lg px-3 outline-none focus:border-[#213d77] uppercase font-bold text-center placeholder:normal-case placeholder:font-normal" placeholder="Enter code" value={captchaInput} onChange={(e) => setCaptchaInput(e.target.value)} />
-                                </div>
-                            </div>
+                            )}
 
-                            <button type="submit" className="w-full bg-[#d11010] hover:bg-[#b91c1c] text-white py-3.5 rounded-lg font-bold shadow-lg shadow-red-500/30 active:scale-95 transition-all mt-4 flex items-center justify-center gap-2">
-                                {loading ? ( <> <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Signing In... </> ) : ( "LOGIN" )}
+                            <button type="submit" disabled={loading} className="w-full bg-[#d11010] hover:bg-[#b91c1c] text-white py-3.5 rounded-lg font-bold shadow-lg shadow-red-500/30 active:scale-95 transition-all mt-4 flex items-center justify-center gap-2">
+                                {loading ? ( <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Please Wait... </>) : ( isRegistering ? "REGISTER" : "LOGIN" )}
                             </button>
                         </form>
-                        <div className="mt-6 text-center"><p className="text-xs text-slate-500">Don't have an account? <span className="font-bold text-[#213d77] cursor-pointer">Register</span></p></div>
+
+                        <div className="mt-6 text-center">
+                            <p className="text-xs text-slate-500">
+                                {isRegistering ? "Already have an account?" : "Don't have an account?"} 
+                                <span onClick={() => { setIsRegistering(!isRegistering); setFormData({username:'',password:'',fullName:'',email:'',mobile:''}); }} className="font-bold text-[#213d77] cursor-pointer ml-1 hover:underline">
+                                    {isRegistering ? "Login" : "Register"}
+                                </span>
+                            </p>
+                        </div>
                     </div>
-                </div>
-                <div className="mt-auto py-4 bg-slate-50 text-center border-t border-slate-200">
-                    <p className="text-[10px] text-slate-400">© 2024 IRCTC Official App.</p>
                 </div>
             </div>
         );
     }
 
-    // --- 4. MAIN APP CONTROLLER ---
     function App() {
         const [view, setView] = React.useState('splash'); 
-
         const handleSplashComplete = () => setView('login');
         const handleLoginSuccess = () => setView('boarding');
-        
-        const handleRedirect = () => {
-             // Doors are open, seamless transition to home
-             window.location.href = "home.html";
-        };
-
+        const handleRedirect = () => window.location.href = "home.html";
         return (
             <>
                 {view === 'splash' && <Splash onComplete={handleSplashComplete} />}
-                {view === 'login' && <LoginPage onLoginSuccess={handleLoginSuccess} />}
+                {view === 'login' && <AuthPage onLoginSuccess={handleLoginSuccess} />}
                 {view === 'boarding' && <BoardingAnimation onRedirectReady={handleRedirect} />}
             </>
         );
@@ -196,7 +244,6 @@
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
-
 </script>
 </body>
 </html>
