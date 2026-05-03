@@ -19,7 +19,6 @@
     /* --- ANIMATIONS --- */
     .gpu-accel { transform: translateZ(0); will-change: transform; backface-visibility: hidden; }
     @keyframes trainJourney { 0% { transform: translateX(-150%); } 40% { transform: translateX(0%); } 70% { transform: translateX(0%); } 100% { transform: translateX(150%); } }
-    @keyframes speedLines { 0% { opacity: 0; transform: translateX(0); } 40% { opacity: 0; } 75% { opacity: 1; transform: translateX(-20px); } 100% { opacity: 0; transform: translateX(-100px); } }
     @keyframes fadeUp { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
     
     .anim-train-main { animation: trainJourney 3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
@@ -76,68 +75,39 @@
         );
     }
 
-    // --- 3. AUTH PAGE (UPDATED LOGIC) ---
+    // --- 3. AUTH PAGE ---
     function AuthPage({ onLoginSuccess }) {
         const [isRegistering, setIsRegistering] = React.useState(false);
         const [loading, setLoading] = React.useState(false);
-        const [showPassword, setShowPassword] = React.useState(false); 
-        
-        // Captcha States
+        const [showPassword, setShowPassword] = React.useState(false);
         const [generatedCaptcha, setGeneratedCaptcha] = React.useState('');
         const [captchaInput, setCaptchaInput] = React.useState('');
+        const [formData, setFormData] = React.useState({ username: '', password: '', fullName: '', email: '', mobile: '' });
 
-        const [formData, setFormData] = React.useState({
-            username: '', password: '', fullName: '', email: '', mobile: ''
-        });
-
-        // Generate Random Captcha
         const generateCaptcha = () => {
             const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
             let result = "";
-            for (let i = 0; i < 5; i++) {
-                result += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
+            for (let i = 0; i < 5; i++) { result += chars.charAt(Math.floor(Math.random() * chars.length)); }
             setGeneratedCaptcha(result);
-            setCaptchaInput(''); // Clear input
+            setCaptchaInput(''); 
         };
+
+        React.useEffect(() => { if(window.lucide) window.lucide.createIcons(); }); 
 
         React.useEffect(() => { 
             document.body.style.background = '#f3f4f6'; 
-            if(window.lucide) window.lucide.createIcons(); 
             generateCaptcha(); 
         }, [isRegistering]);
 
         const handleChange = (e) => setFormData({...formData, [e.target.name]: e.target.value});
 
-        const handleRegister = (e) => {
-            e.preventDefault();
-            setLoading(true);
-            setTimeout(() => {
-                const users = JSON.parse(localStorage.getItem('irctc_users') || "[]");
-                if(users.find(u => u.username === formData.username)) {
-                    alert("Username taken!");
-                    setLoading(false); return;
-                }
-                users.push(formData);
-                localStorage.setItem('irctc_users', JSON.stringify(users));
-                localStorage.setItem('irctc_current_user', JSON.stringify(formData));
-                onLoginSuccess(); 
-            }, 1200);
-        };
-
         const handleLogin = (e) => {
             e.preventDefault();
-
-            // --- FIX: Normalize Case and Trim Whitespace ---
-            const userEntry = captchaInput.toUpperCase().trim();
-            const code = generatedCaptcha.trim();
-
-            if (userEntry !== code) {
-                alert("Incorrect Captcha! Please try again.");
-                generateCaptcha(); // Reset captcha for security
+            if (captchaInput.toUpperCase().trim() !== generatedCaptcha.trim()) {
+                alert("Incorrect Captcha!");
+                generateCaptcha();
                 return;
             }
-
             setLoading(true);
             setTimeout(() => {
                 const users = JSON.parse(localStorage.getItem('irctc_users') || "[]");
@@ -146,7 +116,7 @@
                     localStorage.setItem('irctc_current_user', JSON.stringify(user));
                     onLoginSuccess();
                 } else {
-                    alert("Invalid Credentials. Please Register first.");
+                    alert("Invalid Credentials.");
                     setLoading(false);
                     generateCaptcha();
                 }
@@ -166,62 +136,55 @@
                 <div className="flex-1 px-8 -mt-10 relative z-20 overflow-y-auto pb-4">
                     <div className="bg-white rounded-2xl shadow-xl p-6 anim-entry" style={{animationDelay: '0.4s'}}>
                         <h2 className="text-xl font-bold text-slate-800 mb-1">{isRegistering ? 'Create Account' : 'Welcome Back'}</h2>
-                        <p className="text-sm text-slate-400 mb-6">{isRegistering ? 'Join the network' : 'Sign in to continue'}</p>
-
-                        <form onSubmit={isRegistering ? handleRegister : handleLogin} className="space-y-4">
-                            {isRegistering && (
-                                <div className="space-y-3 anim-fade-in">
-                                    <div className="flex items-center border rounded-lg px-3 py-2 bg-slate-50"><i data-lucide="user-check" className="w-4 h-4 text-slate-400 mr-3"></i><input required name="fullName" placeholder="Full Name" onChange={handleChange} className="w-full bg-transparent outline-none text-sm" /></div>
-                                    <div className="flex items-center border rounded-lg px-3 py-2 bg-slate-50"><i data-lucide="mail" className="w-4 h-4 text-slate-400 mr-3"></i><input required name="email" type="email" placeholder="Email" onChange={handleChange} className="w-full bg-transparent outline-none text-sm" /></div>
-                                    <div className="flex items-center border rounded-lg px-3 py-2 bg-slate-50"><i data-lucide="phone" className="w-4 h-4 text-slate-400 mr-3"></i><input required name="mobile" type="tel" placeholder="Mobile" onChange={handleChange} className="w-full bg-transparent outline-none text-sm" /></div>
-                                </div>
-                            )}
-
+                        <form onSubmit={handleLogin} className="space-y-4">
                             <div className="space-y-1">
                                 <label className="text-xs font-bold text-slate-500 uppercase">Username</label>
-                                <div className="flex items-center border border-slate-200 rounded-lg px-3 py-3 focus-within:border-[#213d77] transition-colors">
+                                <div className="flex items-center border border-slate-200 rounded-lg px-3 py-3 focus-within:border-[#213d77]">
                                     <i data-lucide="user" className="w-5 h-5 text-slate-400 mr-3"></i>
-                                    <input required name="username" onChange={handleChange} type="text" className="w-full outline-none bg-transparent font-medium text-slate-700" placeholder="Username" />
+                                    <input required name="username" onChange={handleChange} type="text" className="w-full outline-none bg-transparent" placeholder="Username" />
                                 </div>
                             </div>
-
                             <div className="space-y-1">
                                 <label className="text-xs font-bold text-slate-500 uppercase">Password</label>
-                                <div className="flex items-center border border-slate-200 rounded-lg px-3 py-3 focus-within:border-[#213d77] transition-colors">
+                                <div className="flex items-center border border-slate-200 rounded-lg px-3 py-3 focus-within:border-[#213d77]">
                                     <i data-lucide="lock" className="w-5 h-5 text-slate-400 mr-3"></i>
-                                    <input required name="password" onChange={handleChange} type={showPassword ? "text" : "password"} className="w-full outline-none bg-transparent font-medium text-slate-700" placeholder="Password" />
-                                    <i onClick={() => setShowPassword(!showPassword)} data-lucide={showPassword ? "eye-off" : "eye"} className="w-4 h-4 text-slate-400 cursor-pointer hover:text-[#213d77]"></i>
+                                    <input required name="password" onChange={handleChange} type={showPassword ? "text" : "password"} className="w-full outline-none bg-transparent" placeholder="Password" />
+                                    <i onClick={() => setShowPassword(!showPassword)} data-lucide={showPassword ? "eye-off" : "eye"} className="w-4 h-4 text-slate-400 cursor-pointer"></i>
                                 </div>
                             </div>
-
+                            
                             {!isRegistering && (
-                                <div className="space-y-1 pt-2">
-                                    <div className="flex justify-between items-center mb-1">
-                                        <label className="text-xs font-bold text-slate-500 uppercase">Captcha</label>
-                                        <span onClick={generateCaptcha} className="text-[10px] text-[#d11010] font-bold cursor-pointer hover:underline flex items-center gap-1"><i data-lucide="refresh-cw" className="w-3 h-3"></i> Refresh</span>
-                                    </div>
+                                <div className="space-y-1">
+                                    <div className="flex justify-between items-center"><label className="text-xs font-bold text-slate-500 uppercase">Captcha</label></div>
                                     <div className="flex gap-3">
-                                        <div className="bg-slate-800 text-white font-mono text-lg tracking-widest px-4 py-2 rounded-lg select-none flex items-center justify-center w-32 shadow-inner" style={{backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.1) 5px, rgba(255,255,255,0.1) 10px)'}}>
-                                            {generatedCaptcha}
-                                        </div>
-                                        <input type="text" value={captchaInput} onChange={(e) => setCaptchaInput(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 outline-none focus:border-[#213d77] uppercase font-bold text-center placeholder:font-normal placeholder:normal-case" placeholder="Enter code" />
+                                        <div className="bg-slate-800 text-white font-mono text-lg px-4 py-2 rounded-lg w-32 flex items-center justify-center">{generatedCaptcha}</div>
+                                        <input type="text" value={captchaInput} onChange={(e) => setCaptchaInput(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 outline-none uppercase font-bold text-center" placeholder="Code" />
                                     </div>
                                 </div>
                             )}
 
-                            <button type="submit" disabled={loading} className="w-full bg-[#d11010] hover:bg-[#b91c1c] text-white py-3.5 rounded-lg font-bold shadow-lg shadow-red-500/30 active:scale-95 transition-all mt-4 flex items-center justify-center gap-2">
-                                {loading ? ( <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Please Wait... </>) : ( isRegistering ? "REGISTER" : "LOGIN" )}
+                            <button type="submit" disabled={loading} className="w-full bg-[#d11010] text-white py-3.5 rounded-lg font-bold shadow-lg active:scale-95 transition-all mt-4">
+                                {loading ? "PLEASE WAIT..." : "LOGIN"}
                             </button>
-                        </form>
 
-                        <div className="mt-6 text-center">
-                            <p className="text-xs text-slate-500">
-                                {isRegistering ? "Already have an account?" : "Don't have an account?"} 
-                                <span onClick={() => { setIsRegistering(!isRegistering); setFormData({username:'',password:'',fullName:'',email:'',mobile:''}); }} className="font-bold text-[#213d77] cursor-pointer ml-1 hover:underline">
-                                    {isRegistering ? "Login" : "Register"}
-                                </span>
-                            </p>
-                        </div>
+                            {/* GUEST BUTTON */}
+                            {!isRegistering && (
+                                <button 
+                                    type="button"
+                                    onClick={() => {
+                                        setLoading(true);
+                                        setTimeout(() => {
+                                            localStorage.setItem('irctc_current_user', JSON.stringify({username: 'Guest', isGuest: true}));
+                                            onLoginSuccess();
+                                        }, 800);
+                                    }}
+                                    className="w-full border-2 border-[#213d77] text-[#213d77] py-2.5 rounded-lg font-bold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 text-sm"
+                                >
+                                    <i data-lucide="user-circle" className="w-4 h-4"></i>
+                                    LOGIN AS GUEST
+                                </button>
+                            )}
+                        </form>
                     </div>
                 </div>
             </div>
@@ -230,14 +193,11 @@
 
     function App() {
         const [view, setView] = React.useState('splash'); 
-        const handleSplashComplete = () => setView('login');
-        const handleLoginSuccess = () => setView('boarding');
-        const handleRedirect = () => window.location.href = "home.html";
         return (
             <>
-                {view === 'splash' && <Splash onComplete={handleSplashComplete} />}
-                {view === 'login' && <AuthPage onLoginSuccess={handleLoginSuccess} />}
-                {view === 'boarding' && <BoardingAnimation onRedirectReady={handleRedirect} />}
+                {view === 'splash' && <Splash onComplete={() => setView('login')} />}
+                {view === 'login' && <AuthPage onLoginSuccess={() => setView('boarding')} />}
+                {view === 'boarding' && <BoardingAnimation onRedirectReady={() => window.location.href = "home.html"} />}
             </>
         );
     }
